@@ -1,0 +1,93 @@
+select * from customers;
+select * from products;
+select * from sales;
+
+-- Analyzing iphone 15 products 
+
+-- 1)Find the Earliest Sale Date?
+
+select min(sales_date) as Earliest_Date from sales;
+
+-- 2)Calculate Percentage of Total Sales?
+
+select sales_date, total_price, round(100 * (total_price / sum(total_price) over()),2) as percentage_total_sales
+from sales;
+
+-- 3)Find Customers with Highest Total Spending?
+
+select c.customer_id, c.customer_name,sum(s.total_price) as Total_Spending
+from sales s
+join customers c   on c.customer_id=s.customer_id
+group by c.customer_id,c.customer_name
+order by Total_Spending desc;
+
+select c.customer_id,c.customer_name,
+rank() over(order by sum(s.total_price) desc) as highest_total_spending
+from sales as s
+join customers as c using(customer_id)
+group by c.customer_id, c.customer_name;
+
+-- 4)Dense Ranking of Products by Star Rating?
+
+select product_name, dense_rank() over(order by star_rating desc) as Star_rating_rank
+from sales;
+
+-- 5)Rank Products by Total Sales?
+
+select product_name, sum(total_price) as Total_Sales,
+rank() over(order by sum(total_price) desc) as product_rank
+from sales
+group by product_name;
+
+-- 6)Calculate the Price Difference with LEAD and LAG ?
+
+select product_name,sale_price,
+lag(sale_price)over(order by product_id) as previous_sale_price,
+lead(sale_price)over(order by product_id) as next_sale_price,
+(sale_price - lag(sale_price) over(order by product_id)) as price_diff_previous,
+(lead(sale_price)over(order by product_id) - sale_price ) as price_diff_next
+from products;
+
+-- 7)Find Customers Whose Names Have 'i' as the Third Letter?
+SELECT customer_id
+      ,customer_name
+FROM customers
+WHERE customer_name LIKE '__i%';
+
+-- 8)List Customers Who Made Multiple Purchases using CTE?
+
+with customerpurchases as (
+		select customer_name, count(sales_id) as Total_purchases
+		from sales
+		join customers using(customer_id)
+		group by customer_name
+
+)
+select customer_name,Total_Purchases
+from customerpurchases
+where Total_purchases > 1;
+
+-- 9)Categorize Products by Star Rating?
+
+select product_name, star_rating,
+		case
+			when star_rating >= 4.80 then 'Excellent'
+			when star_rating >= 4.70 then 'Good'
+			else 'Average'
+		end as rating_category
+from products;	
+
+-- 10)Find the Day of the Week for Each Sale?
+
+select sales_id,sales_date, 
+case extract(dow from sales_date)
+	when 0 then 'Sunday'
+	when 1 then 'Monday'
+	when 2 then 'Tuesday'
+	when 3 then 'Wednesday'
+	when 4 then 'Thursday'
+	when 5 then 'Friday'
+	when 6 then 'Saturday'
+end as Day_Week from sales;
+
+
